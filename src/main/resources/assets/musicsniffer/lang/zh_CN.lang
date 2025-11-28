@@ -1,0 +1,5 @@
+# HUD 文本
+hud.now_playing=正在播放
+
+# 配置界面标题
+config.title=音乐显示配置
