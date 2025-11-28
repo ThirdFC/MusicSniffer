@@ -55,7 +55,7 @@ public class MusicHud extends Gui {
                             pendingSong = result;
                         }
 
-                        //  休息 1 秒再检测下次
+                        // 休息 1 秒再检测下次
                         Thread.sleep(1000);
                     } catch (Exception e) {
                         e.printStackTrace();

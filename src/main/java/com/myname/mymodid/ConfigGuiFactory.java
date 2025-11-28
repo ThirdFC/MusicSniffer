@@ -37,7 +37,7 @@ public class ConfigGuiFactory implements IModGuiFactory {
             super(
                 parentScreen,
                 new ConfigElement(ModConfig.config.getCategory(Configuration.CATEGORY_GENERAL)).getChildElements(),
-                "musicsniffer", 
+                "musicsniffer",
                 false,
                 false,
                 StatCollector.translateToLocal("config.title"));
