@@ -42,6 +42,7 @@ public class MusicHud extends Gui {
         startPollingThread(); // 启动后台检测线程
     }
 
+    // --- 🚀 后台线程：防止游戏卡顿的核心 ---
     private void startPollingThread() {
         Thread poller = new Thread(new Runnable() {
 
@@ -49,13 +50,15 @@ public class MusicHud extends Gui {
             public void run() {
                 while (true) {
                     try {
+                        // 1. 调用 MusicSniffer 去问 Windows (耗时操作)
                         String result = MusicSniffer.getPlayingMusic();
 
+                        // 2. 如果抓到了有效的歌名，存入待处理变量
                         if (result != null && !result.isEmpty()) {
                             pendingSong = result;
                         }
 
-                        // 休息 1 秒再检测下次
+                        // 3. 休息 1 秒再检测下次
                         Thread.sleep(1000);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -69,16 +72,17 @@ public class MusicHud extends Gui {
         poller.start();
     }
 
+    // --- 🎨 渲染部分：动态宽度黑卡片 (已修复层级遮挡) ---
     @SubscribeEvent
     public void onRenderGui(RenderGameOverlayEvent.Post event) {
-        // 只在绘制完头盔层(HELMET)后绘制，确保在最上层
-        if (event.type != RenderGameOverlayEvent.ElementType.HELMET) return;
+        // 🛠️ 修复点1：改为在 TEXT 层渲染，比 HELMET 更晚，能覆盖经验条等
+        if (event.type != RenderGameOverlayEvent.ElementType.TEXT) return;
 
         // 如果没有触发显示，直接跳过
         if (!showing) return;
 
         // 1. 计算动画进度
-        // 使用 Config 中的 displayDuration (默认3000ms) 来计算进度
+        // 使用 Config 中的 displayDuration 来计算进度
         double duration = (double) ModConfig.displayDuration;
         double timeElapsed = (System.currentTimeMillis() - notificationTime) / duration;
 
@@ -111,6 +115,9 @@ public class MusicHud extends Gui {
 
         // --- 开始绘制图形 ---
 
+        GL11.glPushMatrix(); // 🛠️ 修复点2：保存状态，防止影响其他UI
+        GL11.glTranslated(0, 0, 100); // 🛠️ 修复点3：Z轴垫高100，强行覆盖在小地图上面
+
         // A. 画背景框 (半透明黑色 0xCC000000)
         drawRect(xPos, yPos, res.getScaledWidth(), yPos + 32, 0xCC000000);
 
@@ -129,7 +136,7 @@ public class MusicHud extends Gui {
         drawRect(xPos, yPos + 31, res.getScaledWidth(), yPos + 32, lineColor);
 
         // C. 画文字
-        // "Now Playing" 小标题 (灰色)
+        // "Now Playing" 小标题 (灰色，支持汉化)
         this.mc.fontRenderer
             .drawString(StatCollector.translateToLocal("hud.now_playing"), xPos + 30, yPos + 4, 0xAAAAAA);
 
@@ -156,8 +163,11 @@ public class MusicHud extends Gui {
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDepthMask(true);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
+
+        GL11.glPopMatrix(); // 🛠️ 修复点4：恢复状态，避免后续渲染错乱
     }
 
+    // --- 🔄 逻辑更新部分 ---
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
